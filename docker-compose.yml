@@ -1,0 +1,70 @@
+version: '3.8'
+services:
+  mysql-common:
+    image: mysql:8.0
+    container_name: librohub-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./database/init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+
+  api-gateway:
+    build: ./microservices/api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - user-service
+      - catalog-service
+      - loan-service
+      - reservation-service
+
+  user-service:
+    build: ./microservices/user-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-common:3306/users_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+      jwt.secret: ReplaceWithSecretKey123456789012345
+    depends_on:
+      - mysql-common
+
+  catalog-service:
+    build: ./microservices/catalog-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-common:3306/catalog_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+      jwt.secret: ReplaceWithSecretKey123456789012345
+    depends_on:
+      - mysql-common
+
+  loan-service:
+    build: ./microservices/loan-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - mysql-common
+
+  reservation-service:
+    build: ./microservices/reservation-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - mysql-common
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+
+volumes:
+  db-data:

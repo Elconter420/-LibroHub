@@ -35,32 +35,18 @@
 └───────────┘  └───────────┘  └───────────┘  └───────────┘
 ```
 
-## 🛠️ Tecnologías Utilizadas
+## 🚀 Objetivo de este README actualizado
+Proveer una guía práctica y reproducible para crear el proyecto desde 0: scaffolding de microservicios, configuración mínima, Dockerfiles, docker-compose y checklist de tareas para que el equipo implemente el MVP siguiendo pasos claros.
 
-### Backend (Spring Boot)
-- **Java 17** - Lenguaje principal
-- **Spring Boot 3.x** - Framework base
-- **Spring Data JPA** - Persistencia de datos
-- **Spring Security + JWT** - Autenticación y autorización
-- **Spring Cloud Gateway** - API Gateway
-- **MySQL 8.0** - Base de datos
-- **Docker & Docker Compose** - Contenedores y orquestación
+## 1. MVP (alcance mínimo)
+- Autenticación (registro/login) con JWT.
+- Catálogo: CRUD básico de libros.
+- Préstamos: crear préstamo y devolución.
+- Reservas: reservar sala.
+- Frontend: login, listado de libros, solicitar préstamo, reservar sala.
+- Base de datos: MySQL para cada microservicio (pueden compartirse en fases iniciales).
 
-### Frontend
-- **React 18** - Biblioteca UI
-- **TypeScript** - Tipado estático
-- **Axios** - Cliente HTTP
-- **React Router** - Navegación
-- **Bootstrap 5** - Estilos y componentes
-- **React Query** - Gestión de estado del servidor
-
-### Herramientas de Desarrollo
-- **Git & GitHub** - Control de versiones
-- **Postman** - Pruebas de API
-- **Swagger/OpenAPI** - Documentación de APIs
-- **Maven** - Gestión de dependencias
-
-## 📂 Estructura del Proyecto
+## 2. Estructura recomendada (carpetas)
 ```
 -Librohub/
 ├── microservices/
@@ -76,46 +62,183 @@
 └── documentation/             # Documentación del proyecto
 ```
 
-## 🚀 Instalación y Configuración
+## 3. Comandos para generar scaffolding rápido
 
-### Prerrequisitos
-- Java JDK 17 o superior
-- Docker y Docker Compose
-- Node.js 18+ y npm
-- Git
+1) Generar microservicios backend con Spring Initializr (ejemplo, repetir para cada servicio: user-service, catalog-service, loan-service, reservation-service, api-gateway)
+- Requisitos: Java 17, Maven
+- Ejemplo usando curl (ajustar group/artifact/dependencies según servicio):
+```bash
+# Ejemplo: crear catalog-service
+curl "https://start.spring.io/starter.zip?type=maven-project&language=java&bootVersion=3.1.0&baseDir=catalog-service&groupId=edu.univalle.librohub&artifactId=catalog-service&name=catalog-service&packageName=edu.univalle.librohub.catalog&dependencies=web,data-jpa,mysql,security,actuator" -o catalog-service.zip
+unzip catalog-service.zip -d microservices/
+```
 
-### Pasos de Instalación
+2) Generar frontend con Vite + React + TypeScript (ejemplo)
+```bash
+npm create vite@latest frontend -- --template react-ts
+cd frontend
+npm install
+```
 
-1. **Clonar el repositorio**
-   ```bash
-   git clone https://github.com/Elconter420/-LibroHub.git
-   cd -LibroHub
-   ```
+## 4. Dockerfile y ejemplo de producción (plantillas)
 
-2. **Construir y ejecutar con Docker Compose**
-   ```bash
-   docker-compose up --build
-   ```
+- Dockerfile para Spring Boot (colocar en cada microservicio)
+```dockerfile
+# filepath: c:\Users\Jhojan\Downloads\LibroHub\-LibroHub\microservices\<service>\Dockerfile
+FROM eclipse-temurin:17-jdk-alpine
+ARG JAR_FILE=target/*.jar
+WORKDIR /app
+COPY ${JAR_FILE} app.jar
+EXPOSE 8080
+ENTRYPOINT ["java","-jar","/app/app.jar"]
+```
 
-3. **Acceder a la aplicación**
-   - Frontend: http://localhost:3000
-   - API Gateway: http://localhost:8080
-   - Swagger UI: http://localhost:8080/swagger-ui.html
+- Dockerfile para frontend (React)
+```dockerfile
+# filepath: c:\Users\Jhojan\Downloads\LibroHub\-LibroHub\frontend\Dockerfile
+FROM node:18-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
-4. **Credenciales de prueba**
-   ```
-   Estudiante:
-   - Email: estudiante@universidad.edu
-   - Password: estudiante123
-   
-   Bibliotecario:
-   - Email: bibliotecario@universidad.edu
-   - Password: bibliotecario123
-   
-   Administrador:
-   - Email: admin@universidad.edu
-   - Password: admin123
-   ```
+FROM nginx:stable-alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+## 5. docker-compose.yml de ejemplo (colocar en la raíz del repo)
+- Este compose levanta 1 servicio de ejemplo + MySQL; replicar bloques para cada microservicio cambiando puertos y nombres.
+```yaml
+# filepath: c:\Users\Jhojan\Downloads\LibroHub\-LibroHub\docker-compose.yml
+version: '3.8'
+services:
+  mysql-common:
+    image: mysql:8.0
+    container_name: librohub-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./database/init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+
+  api-gateway:
+    build: ./microservices/api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql-common
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-common:3306/gateway_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+
+  user-service:
+    build: ./microservices/user-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-common:3306/users_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+    depends_on:
+      - mysql-common
+
+  catalog-service:
+    build: ./microservices/catalog-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-common:3306/catalog_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+    depends_on:
+      - mysql-common
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+
+volumes:
+  db-data:
+```
+
+## 6. application.properties / application.yml mínimos (ejemplo para user-service)
+```properties
+# filepath: c:\Users\Jhojan\Downloads\LibroHub\-LibroHub\microservices\user-service\src\main\resources\application.properties
+spring.datasource.url=jdbc:mysql://mysql-common:3306/users_db?useSSL=false&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=rootpassword
+spring.jpa.hibernate.ddl-auto=update
+server.port=8081
+jwt.secret=ReemplazaPorSecretoSeguro
+jwt.expirationMs=3600000
+```
+
+## 7. Scripts SQL iniciales
+- Colocar scripts en database/init-scripts/ para inicializar BD y usuarios de prueba.
+```sql
+-- filepath: c:\Users\Jhojan\Downloads\LibroHub\-LibroHub\database\init-scripts\init.sql
+CREATE DATABASE IF NOT EXISTS users_db;
+CREATE DATABASE IF NOT EXISTS catalog_db;
+CREATE DATABASE IF NOT EXISTS loans_db;
+CREATE DATABASE IF NOT EXISTS reserv_db;
+-- Crear tablas mínimas en cada DB (ejemplos)
+```
+
+## 8. Checklist de implementación (pasos sugeridos por prioridad)
+1. Crear repositorios locales con Spring Initializr para cada microservicio.
+2. Implementar user-service: entidad User, repositorio, servicio de autenticación (JWT), endpoints /api/auth/*
+3. Implementar catalog-service: entidad Book, repositorio, controladores CRUD.
+4. Implementar loan-service: endpoints borrow/return básicos, integración simple con catalog-service por HTTP (usar RestTemplate o WebClient).
+5. Implementar reservation-service: CRUD de reservas.
+6. Crear API Gateway con rutas y balanceo hacia los servicios.
+7. Construir frontend mínimo: login, listado de libros, botones para solicitar préstamo y reservar.
+8. Dockerizar cada servicio y probar con docker-compose.
+9. Añadir pruebas unitarias básicas (JUnit + Mockito).
+10. Documentar endpoints con Swagger en cada servicio (springdoc-openapi).
+
+## 9. Comandos útiles
+- Construir y ejecutar docker-compose:
+```bash
+docker-compose up --build
+```
+- Construir un microservicio con Maven:
+```bash
+cd microservices/catalog-service
+mvn clean package -DskipTests
+```
+- Logs:
+```bash
+docker-compose logs -f
+```
+
+## 10. Plantillas rápidas (boilerplate) y recomendaciones
+- Seguridad: implementar filtro JWT en api-gateway o en cada servicio según preferencia. Para MVP, poner validación en user-service y exigir token en los otros servicios.
+- Comunicación entre microservicios: usar REST sobre HTTP y mantener contratos simples (JSON). Para producción considerar API Gateway + circuit-breaker.
+- Variables secretas: usar Docker secrets o variables de entorno (no comitear secretos).
+
+## 11. Tareas recomendadas para los integrantes
+- Jaider: implementar catalog-service (modelos, repos, controllers).
+- Jhojan: API Gateway + docker-compose + CI.
+- Juan: user-service + autenticación JWT + documentación Swagger.
+
+## 12. Próximos pasos inmediatos (qué hacer ahora)
+1. Ejecutar los comandos de "scaffolding" para crear los proyectos.
+2. Añadir los Dockerfile mostrados en cada microservicio.
+3. Copiar el docker-compose.yml a la raíz y ajustar rutas de build.
+4. Crear folder database/init-scripts y añadir init.sql.
+5. Implementar user-service básico (registro/login) y probar con Postman.
+6. Iterar con catalog-service y frontend.
+
+---
 
 ## 📡 Endpoints Principales de la API
 

@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>LibroHub MVP</title></head>
+<body>
+<h1>LibroHub - MVP</h1>
+<div>
+  <h2>Libros</h2>
+  <button onclick="fetchBooks()">Listar libros</button>
+  <pre id="books"></pre>
+</div>
+<script>
+async function fetchBooks(){
+  const res = await fetch('/api/catalog/books'); // asume proxy/API gateway
+  const data = await res.json();
+  document.getElementById('books').textContent = JSON.stringify(data, null, 2);
+}
+</script>
+</body>
+</html>
