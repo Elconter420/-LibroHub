@@ -49,6 +49,10 @@ services:
     build: ./microservices/loan-service
     ports:
       - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-common:3306/loans_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
     depends_on:
       - mysql-common
 
@@ -56,6 +60,10 @@ services:
     build: ./microservices/reservation-service
     ports:
       - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-common:3306/reserv_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
     depends_on:
       - mysql-common
 

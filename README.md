@@ -143,17 +143,23 @@ classDiagram
 
     class Loan {
         +Long id
-        +Date loanDate
-        +Date dueDate
-        +calculateFine()
-        +returnBook()
+        +Long userId
+        +Long bookId
+        +LocalDateTime loanDate
+        +LocalDateTime dueDate
+        +LocalDateTime returnDate
+        +String status
+        +returnLoan()
     }
 
     class Reservation {
         +Long id
-        +Date startTime
-        +Date endTime
-        +cancel()
+        +Long userId
+        +Room room
+        +LocalDateTime startTime
+        +LocalDateTime endTime
+        +String status
+        +createReservation()
     }
 
     User "1" --> "*" Loan : solicita
@@ -231,13 +237,15 @@ docker-compose logs -f
 - `POST /api/catalog/reviews`: Agregar reseña a un libro
 
 ### Préstamos y Multas
-- `POST /api/loans/borrow`: Solicitar préstamo
-- `POST /api/loans/return/{id}`: Devolver libro (calcula multas si aplica)
-- `GET /api/loans/fines`: Ver multas pendientes
+- `GET /api/loans`: Listar todos los préstamos (Admin)
+- `GET /api/loans/user/{userId}`: Ver historial de préstamos de un usuario
+- `POST /api/loans/borrow`: Solicitar préstamo (Body: `{ userId, bookId }`)
+- `POST /api/loans/return/{id}`: Devolver libro (Actualiza estado a RETURNED)
 
 ### Reservas
 - `GET /api/reservations/rooms`: Listar salas disponibles
-- `POST /api/reservations`: Reservar sala
+- `GET /api/reservations/user/{userId}`: Ver reservas de un usuario
+- `POST /api/reservations`: Crear reserva (Body: `{ userId, roomId, startTime, endTime }`)
 
 ## 🎓 Información Académica
 **Universidad:** Universidad del Valle  
