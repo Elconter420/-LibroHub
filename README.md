@@ -250,6 +250,11 @@ docker-compose logs -f
 
 ---
 
+## Pagina principal:
+
+![alt text](image.png)
+
+
 <div align="center">
   
 **✨ Desarrollado por Jaider, Jhojan y Juan ✨**
@@ -260,7 +265,3 @@ docker-compose logs -f
 [![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
 
 </div
-
-## Pagina principal:
-
-![alt text](image.png)
